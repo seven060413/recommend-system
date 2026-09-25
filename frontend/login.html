@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录 - 智选商城推荐系统</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: linear-gradient(135deg, #fff8f3 0%, #ffe6d5 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      padding: 20px;
+    }
+
+    body::before {
+      content: '';
+      position: absolute;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(255,80,0,0.15) 0%, transparent 70%);
+      top: -150px; left: -150px;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    body::after {
+      content: '';
+      position: absolute;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(255,140,0,0.1) 0%, transparent 70%);
+      bottom: -200px; right: -150px;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .login-box {
+      background: #fff;
+      width: 400px;
+      max-width: 100%;
+      border-radius: 16px;
+      padding: 40px 32px 32px;
+      box-shadow: 0 10px 40px rgba(255, 80, 0, 0.12), 0 2px 10px rgba(0, 0, 0, 0.04);
+      position: relative;
+      z-index: 1;
+      overflow: hidden;
+    }
+    .login-box::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #ff8c00, #ff5000, #ff8c00);
+    }
+
+    .logo {
+      text-align: center;
+      font-size: 22px;
+      font-weight: 800;
+      color: #ff5000;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      letter-spacing: -0.3px;
+    }
+    .welcome-tip {
+      text-align: center;
+      font-size: 13px;
+      color: #999;
+      margin-bottom: 32px;
+    }
+
+    .form-group { margin-bottom: 20px; }
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      transition: all 0.2s;
+      background: #fafafa;
+      color: #333;
+    }
+    .form-group input:focus {
+      border-color: #ff5000;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(255, 80, 0, 0.1);
+    }
+
+    .btn-login {
+      width: 100%;
+      background: linear-gradient(135deg, #ff8c00, #ff5000);
+      color: #fff;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 8px;
+      box-shadow: 0 4px 12px rgba(255, 80, 0, 0.3);
+    }
+    .btn-login:hover {
+      background: linear-gradient(135deg, #e64800, #ff5000);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(255, 80, 0, 0.4);
+    }
+    .btn-login:active { transform: translateY(0); }
+
+    .footer-links {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 12px;
+      color: #888;
+    }
+    .footer-links a {
+      color: #ff5000;
+      text-decoration: none;
+      margin: 0 8px;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: #e64800; text-decoration: underline; }
+
+    .quick-login {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px dashed #eee;
+      text-align: center;
+      font-size: 12px;
+      color: #999;
+    }
+    .quick-login .user-tags {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .quick-login .user-tag {
+      display: inline-block;
+      padding: 4px 14px;
+      background: #fff8f3;
+      color: #ff5000;
+      border: 1px solid #ffd8bf;
+      border-radius: 16px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .quick-login .user-tag:hover {
+      background: #ff5000;
+      color: #fff;
+      border-color: #ff5000;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-box">
+    <div class="logo">🛍️ 智选商城推荐系统</div>
+    <div class="welcome-tip">基于 Jaccard 相似度的个性化推荐</div>
+
+    <div class="form-group">
+      <label>用户名</label>
+      <input type="text" id="username" placeholder="请输入用户名（默认：张三）" value="张三">
+    </div>
+    <div class="form-group">
+      <label>密码</label>
+      <input type="password" id="password" placeholder="请输入密码（任意密码）" value="123456">
+    </div>
+
+    <button class="btn-login" onclick="doLogin()">登 录</button>
+
+    <div class="footer-links">
+      <a href="#">忘记密码？</a> | <a href="#">免费注册</a>
+    </div>
+
+    <div class="quick-login">
+      快速切换演示账号：
+      <div class="user-tags">
+        <span class="user-tag" onclick="quickLogin('张三')">张三</span>
+        <span class="user-tag" onclick="quickLogin('李四')">李四</span>
+        <span class="user-tag" onclick="quickLogin('王五')">王五</span>
+        <span class="user-tag" onclick="quickLogin('赵六')">赵六</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function doLogin() {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value.trim();
+
+      if (!username) { alert('请输入用户名'); return; }
+      if (!password) { alert('请输入密码'); return; }
+
+      sessionStorage.setItem('currentUser', username);
+      window.location.href = 'index.html';
+    }
+
+    function quickLogin(name) {
+      document.getElementById('username').value = name;
+      document.getElementById('password').value = '123456';
+      doLogin();
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') doLogin();
+    });
+  </script>
+</body>
+</html>

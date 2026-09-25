@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>我的商城 - 智选商城</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <script>
+    // 🧹 统一版本号，强制清理旧缓存
+    (function() {
+      const DATA_VERSION = 'v6'; 
+      if (localStorage.getItem('data_version') !== DATA_VERSION) {
+        localStorage.removeItem('shopping_users');
+        localStorage.setItem('data_version', DATA_VERSION);
+        console.log('[数据清理] 已切换到 v6');
+      }
+    })();
+
+    if (!sessionStorage.getItem('currentUser')) {
+      window.location.href = 'login.html';
+    }
+  </script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f5f6f9; color: #333; -webkit-font-smoothing: antialiased; }
+    a { text-decoration: none; color: inherit; }
+    .top-nav { background: #ff5000; height: 38px; display: flex; align-items: center; color: #fff; font-size: 12px; padding: 0 20px; }
+    .top-nav-inner { max-width: 1280px; width: 100%; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+    .top-nav-links { display: flex; gap: 24px; align-items: center; }
+    .top-nav-links a { color: #fff; cursor: pointer; transition: opacity 0.2s; opacity: 0.9; }
+    .top-nav-links a:hover { opacity: 1; text-decoration: underline; }
+    .top-nav-links a.active { font-weight: 700; opacity: 1; }
+    .header-section { background: #fff; border-bottom: 1px solid #f0f0f0; padding: 16px 20px; }
+    .header-section-inner { max-width: 1280px; margin: 0 auto; }
+    .logo { font-size: 24px; font-weight: 900; color: #ff5000; display: flex; align-items: center; gap: 10px; letter-spacing: -0.3px; }
+    .logo .badge { font-size: 12px; background: #fff4ed; color: #ff5000; padding: 4px 12px; border-radius: 12px; font-weight: 500; letter-spacing: 0; }
+    .main-container { max-width: 1280px; margin: 20px auto; padding: 0 20px 40px; display: flex; flex-direction: column; gap: 20px; }
+    .profile-banner { background: #fff; border-radius: 12px; padding: 24px 30px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 12px rgba(0,0,0,0.04); border: 1px solid #eef0f3; border-left: 5px solid #ff5000; }
+    .profile-banner .left { display: flex; align-items: center; gap: 20px; }
+    .avatar { width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, #ffd8bf, #ff5000); color: #fff; font-size: 32px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px rgba(255,80,0,0.2); }
+    .user-details h2 { font-size: 22px; margin-bottom: 6px; font-weight: 700; }
+    .user-details p { font-size: 13px; color: #888; }
+    .profile-actions { display: flex; gap: 12px; }
+    .btn-outline { background: #fff; border: 1px solid #ff5000; color: #ff5000; padding: 8px 20px; border-radius: 20px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+    .btn-outline:hover { background: #fff4ed; }
+    .btn-solid { background: #ff5000; border: 1px solid #ff5000; color: #fff; padding: 8px 20px; border-radius: 20px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+    .btn-solid:hover { background: #e64800; border-color: #e64800; }
+    .history-grid { display: grid; grid-template-columns: 1fr; gap: 20px; width: 100%; }
+    .content-wrapper { display: block; width: 100%; }
+    .card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.04); border: 1px solid #eef0f3; margin-bottom: 20px; }
+    .card-title { font-size: 15px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: #1f2937; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px; }
+    .card-title::before { content: ""; width: 4px; height: 14px; background: #ff5000; border-radius: 2px; }
+    .right-col { display: flex; flex-direction: column; gap: 20px; }
+    .tags { display: flex; flex-wrap: wrap; gap: 10px; }
+    .tag { display: flex; align-items: center; gap: 6px; background: #f9fafb; padding: 4px 14px 4px 4px; border-radius: 20px; font-size: 13px; font-weight: 500; color: #374151; border: 1px solid #e5e7eb; transition: all 0.2s; }
+    .tag:hover { border-color: #ffd8bf; background: #fff8f3; }
+    .tag img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; }
+    .tag .emoji-fallback { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: #fff4ed; border-radius: 50%; font-size: 14px; }
+    .similar-users-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+    .similar-user-card { display: flex; gap: 24px; background: #fff; border: 1px solid #f0f0f0; border-radius: 12px; padding: 20px 24px; transition: all 0.3s; }
+    .similar-user-card:hover { border-color: #ffd8bf; box-shadow: 0 4px 16px rgba(255,80,0,0.08); }
+    .user-info-left { width: 160px; flex-shrink: 0; display: flex; flex-direction: column; justify-content: center; gap: 12px; border-right: 1px dashed #e5e7eb; padding-right: 24px; }
+    .user-name-row { display: flex; align-items: center; gap: 10px; }
+    .user-avatar-circle { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .avatar-li { background: linear-gradient(135deg, #60a5fa, #3b82f6); }
+    .avatar-wang { background: linear-gradient(135deg, #34d399, #059669); }
+    .avatar-zhao { background: linear-gradient(135deg, #9ca3af, #6b7280); }
+    .user-name-text { font-size: 16px; font-weight: 600; color: #1f2937; }
+    .sim-value-big { font-size: 30px; font-weight: 800; color: #ff5000; line-height: 1; margin-bottom: 4px; }
+    .sim-value-label { font-size: 12px; color: #9ca3af; letter-spacing: 0.5px; }
+    .math-detail-right { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 8px; }
+    .math-line { font-family: "SF Mono", "Consolas", "Monaco", "Courier New", monospace; font-size: 13px; color: #4b5563; line-height: 1.7; }
+    .math-line .set-a { color: #2563eb; font-weight: 500; }
+    .math-line .set-b { color: #dc2626; font-weight: 500; }
+    .math-line .calc { color: #d97706; font-weight: 500; }
+    .math-line .result { color: #16a34a; font-weight: 700; font-size: 14px; }
+    .math-divider { height: 1px; background: linear-gradient(90deg, #f0f0f0, transparent); margin: 8px 0; }
+    #chart { width: 100%; height: 280px; margin-top: 10px; }
+    .product-list { display: flex; flex-direction: column; gap: 10px; }
+    .product-card { display: flex; gap: 12px; align-items: center; background: #fafafa; padding: 10px 16px; border-radius: 8px; border: 1px solid #f0f0f0; transition: all 0.2s; }
+    .product-card:hover { background: #fff8f3; border-color: #ffd8bf; }
+    .product-img { width: 50px; height: 50px; border-radius: 6px; overflow: hidden; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+    .product-img img { width: 100%; height: 100%; object-fit: cover; }
+    .product-info { flex: 1; min-width: 0; }
+    .product-name { font-size: 13px; font-weight: 600; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .product-meta { font-size: 11px; color: #999; display: flex; justify-content: space-between; }
+    .product-price { color: #ff5000; font-weight: 700; }
+    .empty-state { text-align: center; padding: 20px; color: #999; font-size: 13px; }
+    @media (max-width: 900px) { .profile-banner { flex-direction: column; gap: 16px; align-items: flex-start; } }
+  </style>
+</head>
+<body>
+
+  <div class="top-nav">
+    <div class="top-nav-inner">
+      <div>📍 智选商城</div>
+      <div class="top-nav-links">
+        <a href="index.html">首页推荐</a>
+        <a href="my-mall.html" class="active">我的商城</a>
+        <a href="login.html" onclick="logout()">退出登录</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="header-section">
+    <div class="header-section-inner">
+      <div class="logo">🛍️ 智选商城 <span class="badge">推荐系统</span></div>
+    </div>
+  </div>
+
+  <div class="main-container">
+    <div class="profile-banner">
+      <div class="left">
+        <div class="avatar">👤</div>
+        <div class="user-details">
+          <h2 id="profileUsername">加载中...</h2>
+          <p>智选商城会员</p>
+        </div>
+      </div>
+      <div class="profile-actions">
+        <button class="btn-outline" onclick="logout()">切换账号</button>
+        <button class="btn-solid" onclick="logout()">退出登录</button>
+      </div>
+    </div>
+
+    <div class="history-grid">
+      <div class="card">
+        <div class="card-title">我的浏览 / 购买记录</div>
+        <div class="product-list" id="combinedHistoryList"></div>
+      </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="right-col">
+        <div class="card">
+          <div class="card-title">我的偏好商品集合 (A)</div>
+          <div class="tags" id="myPreferencesList"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">相似用户 Top3 及 Jaccard 计算</div>
+          <div class="similar-users-grid" id="similarUsersList"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Jaccard 相似度可视化</div>
+          <div id="chart"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">后端推荐商品 (为你推荐)</div>
+          <div class="product-list" id="backendRecommendList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const loggedInUser = sessionStorage.getItem('currentUser');
+    if (!loggedInUser) window.location.href = 'login.html';
+    document.addEventListener('DOMContentLoaded', () => { const nameEl = document.getElementById('profileUsername'); if (nameEl) nameEl.innerText = loggedInUser; });
+
+    const productImages = { "手机": "images/phone.jpg", "耳机": "images/headphone.jpg", "充电宝": "images/powerbank.jpg", "笔记本": "images/laptop.jpg", "数据线": "images/cable.jpg", "手表": "images/watch.jpg", "手环": "images/band.jpg", "平板": "images/tablet.jpg", "相机": "images/camera.jpg", "鼠标": "images/mouse.jpg", "音箱": "images/speaker.jpg", "显示器": "images/monitor.jpg" };
+    const iconMap = { '手机':'📱','耳机':'🎧','充电宝':'🔋','笔记本':'💻','数据线':'🔌','手表':'⌚','手环':'⌚','平板':'📟','相机':'📷','鼠标':'🖱️','音箱':'🔊','显示器':'🖥️' };
+    
+    // 🌟 前端本地兜底数据，与后端 data.py 完全一致
+    const defaultUsers = {
+      "张三": { preferences: ["手机", "充电宝", "手表", "笔记本"], viewHistory: [], buyHistory: [] },
+      "李四": { preferences: ["手机", "耳机", "笔记本", "相机"], viewHistory: [], buyHistory: [] },
+      "王五": { preferences: ["耳机", "充电宝", "数据线", "鼠标"], viewHistory: [], buyHistory: [] },
+      "赵六": { preferences: ["手表", "手环", "音箱", "显示器"], viewHistory: [], buyHistory: [] },
+      "陈七": { preferences: ["键盘", "鼠标", "显示器"], viewHistory: [], buyHistory: [] },
+      "刘八": { preferences: ["相机", "音箱", "手机"], viewHistory: [], buyHistory: [] }
+    };
+
+    let allUsers = JSON.parse(JSON.stringify(defaultUsers));
+    
+    try {
+      const saved = localStorage.getItem('shopping_users');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        for (let name in parsed) {
+          if (allUsers[name]) allUsers[name].preferences = parsed[name].preferences || [];
+        }
+      }
+    } catch(e) { console.warn('读取本地数据失败', e); }
+
+    let currentUser = loggedInUser;
+    if (!allUsers[currentUser]) allUsers[currentUser] = { preferences: [], viewHistory: [], buyHistory: [] };
+
+    for (let name in allUsers) { syncHistoryFromPreferences(name); }
+    let myChart = null;
+
+    function syncHistoryFromPreferences(userName) {
+      const prefs = allUsers[userName].preferences || [];
+      const today = new Date().toISOString().split('T')[0];
+      allUsers[userName].viewHistory = prefs.map(item => ({ item: item, image: productImages[item] || '', price: "¥" + (Math.floor(Math.random() * 4000) + 100), time: today }));
+      allUsers[userName].buyHistory = prefs.map(item => ({ item: item, image: productImages[item] || '', price: "¥" + (Math.floor(Math.random() * 4000) + 100), time: today }));
+    }
+
+    function computeJaccard(A, B) {
+      const intersection = A.filter(item => B.includes(item));
+      const union = [...new Set([...A, ...B])];
+      const sim = union.length === 0 ? 0 : (intersection.length / union.length);
+      return { intersection, union, sim };
+    }
+
+    function getSimilarUsers() {
+      const A = allUsers[currentUser].preferences || [];
+      let results = [];
+      for (let name in allUsers) {
+        if (name === currentUser) continue;
+        const B = allUsers[name].preferences || [];
+        const { intersection, union, sim } = computeJaccard(A, B);
+        
+        // 🌟 修复核心：计算差集（B - A），也就是推荐依据！
+        const diff = B.filter(item => !A.includes(item)); 
+        
+        results.push({ user: name, preferences: B, intersection, union, sim, diff });
+      }
+      results.sort((a, b) => b.sim - a.sim);
+      return results.slice(0, 3);
+    }
+
+    function renderPreferences() {
+      const container = document.getElementById('myPreferencesList');
+      const prefs = allUsers[currentUser].preferences || [];
+      if (prefs.length === 0) { container.innerHTML = '<div class="empty-state">暂无偏好商品</div>'; return; }
+      container.innerHTML = prefs.map(item => { const imgPath = productImages[item]; const emoji = iconMap[item] || '📦'; return imgPath ? `<span class="tag"><img src="${imgPath}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'"><span class="emoji-fallback" style="display:none;">${emoji}</span>${item}</span>` : `<span class="tag"><span class="emoji-fallback">${emoji}</span>${item}</span>`; }).join('');
+    }
+
+    // ============================================================
+    // ✅ 修复核心：实时重算交集并集，确保与页面显示的 A、B 完全一致
+    // ============================================================
+    function renderSimilarUsers(similarUsers) {
+      const container = document.getElementById('similarUsersList');
+      if (!similarUsers || similarUsers.length === 0) { container.innerHTML = '<div class="empty-state">暂无相似用户数据</div>'; return; }
+
+      const A_arr = allUsers[currentUser].preferences || [];
+      const setA = A_arr.join(', ') || '∅';
+      const avatarClasses = ['avatar-li', 'avatar-wang', 'avatar-zhao'];
+
+      container.innerHTML = similarUsers.map((x, index) => {
+        const B_arr = x.preferences || [];
+        const setB = B_arr.join(', ') || '∅';
+        
+        // 🌟 实时重算交集、并集和相似度
+        const inter = A_arr.filter(i => B_arr.includes(i));
+        const union = [...new Set([...A_arr, ...B_arr])];
+        const sim = union.length === 0 ? 0 : inter.length / union.length;
+
+        const interStr = inter.join(', ') || '∅';
+        const unionStr = union.join(', ') || '∅';
+
+        return `
+          <div class="similar-user-card">
+            <div class="user-info-left">
+              <div class="user-name-row">
+                <div class="user-avatar-circle ${avatarClasses[index] || 'avatar-zhao'}">${x.user.charAt(0)}</div>
+                <div class="user-name-text">${x.user}</div>
+              </div>
+              <div><div class="sim-value-big">${Number(sim).toFixed(2)}</div><div class="sim-value-label">Jaccard 相似度</div></div>
+            </div>
+            <div class="math-detail-right">
+              <div class="math-line"><span class="set-a">A</span> = {${setA}}</div>
+              <div class="math-line"><span class="set-b">B</span> = {${setB}}</div>
+              <div class="math-divider"></div>
+              <div class="math-line"><span class="set-a">A</span> ∩ <span class="set-b">B</span> = {${interStr}}，|A∩B| = <span class="calc">${inter.length}</span></div>
+              <div class="math-line"><span class="set-a">A</span> ∪ <span class="set-b">B</span> = {${unionStr}}，|A∪B| = <span class="calc">${union.length}</span></div>
+              <div class="math-divider"></div>
+              <div class="math-line">J(A,B) = |A∩B| / |A∪B| = ${inter.length} / ${union.length} = <span class="result">${Number(sim).toFixed(4)}</span></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      
+      renderChart(similarUsers);
+    }
+
+    function renderChart(similarUsers) {
+      const chartDom = document.getElementById('chart'); if (!chartDom) return; if (!myChart) myChart = echarts.init(chartDom);
+      myChart.setOption({
+        tooltip: { trigger: 'axis', valueFormatter: (value) => value ? Number(value).toFixed(2) : 0, backgroundColor: 'rgba(255, 255, 255, 0.95)', borderColor: '#eef0f3', textStyle: { color: '#333' }, extraCssText: 'box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 8px;' },
+        grid: { left: '4%', right: '4%', bottom: '5%', top: '15%', containLabel: true },
+        xAxis: { type: 'category', data: similarUsers.map(x => x.user), axisLine: { lineStyle: { color: '#e5e7eb' } }, axisTick: { show: false }, axisLabel: { color: '#6b7280', fontWeight: 500, fontSize: 14, margin: 14 } },
+        yAxis: { type: 'value', max: 1, splitLine: { lineStyle: { color: '#f3f4f6', type: 'solid' } }, axisLabel: { color: '#9ca3af', fontSize: 12 } },
+        animationDuration: 1000, animationEasing: 'cubicOut',
+        series: [{ name: 'Jaccard 相似度', type: 'bar', data: similarUsers.map(x => x.sim), barWidth: 40, itemStyle: { borderRadius: [4, 4, 0, 0], color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#ff8c00' }, { offset: 1, color: '#ff5000' }]) }, label: { show: true, position: 'top', distance: 10, color: '#ff5000', fontWeight: 'bold', fontSize: 14, formatter: p => Number(p.value).toFixed(2) } }]
+      });
+    }
+
+    function renderCombinedHistory() {
+      const container = document.getElementById('combinedHistoryList');
+      const view = allUsers[currentUser].viewHistory || []; const buy = allUsers[currentUser].buyHistory || [];
+      const map = new Map();
+      view.forEach(item => map.set(item.item, { ...item, type: 'view' })); buy.forEach(item => map.set(item.item, { ...item, type: 'buy' }));
+      const combined = Array.from(map.values());
+      if (combined.length === 0) { container.innerHTML = '<div class="empty-state">暂无记录</div>'; return; }
+      container.innerHTML = combined.map(record => { const imgHtml = record.image ? `<img src="${record.image}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">` : ''; const emojiHtml = `<span style="display:${record.image ? 'none' : 'block'}">${iconMap[record.item] || '📦'}</span>`; return `<div class="product-card"><div class="product-img">${imgHtml}${emojiHtml}</div><div class="product-info"><div class="product-name">${record.item}</div><div class="product-meta"><span>${record.time}</span><span class="product-price">${record.price}</span></div></div></div>`; }).join('');
+    }
+
+    // ==========================================
+    // 🚀 核心：后端优先，前端兜底（含推荐理由本地反查）
+    // ==========================================
+    function loadFromBackend() {
+        const username = currentUser || sessionStorage.getItem('currentUser') || '张三';
+        console.log("正在向后端请求用户数据:", username);
+
+        // 🌟 1. 本地先算出相似用户和推荐来源映射（作为后端的镜像备份）
+        const localSimilarUsers = getSimilarUsers();
+        let recMap = {};
+        localSimilarUsers.forEach(x => x.diff.forEach(p => { if(!recMap[p]) recMap[p]=[]; recMap[p].push(x.user); }));
+
+        // 🌟 2. 尝试请求后端
+        fetch(`http://127.0.0.1:5000/recommend/${username}`)
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP 错误: ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                console.log("后端返回数据:", data);
+
+                // 2.1 渲染相似用户
+                if (data.similar_users && data.similar_users.length > 0) {
+                    renderSimilarUsers(data.similar_users);
+                } else {
+                    document.getElementById('similarUsersList').innerHTML = '<div class="empty-state">暂无相似用户</div>';
+                }
+
+                // 2.2 渲染后端推荐的商品，并从前端反查推荐来源
+                const recContainer = document.getElementById('backendRecommendList');
+                if (recContainer && data.recommendations && data.recommendations.length > 0) {
+                    recContainer.innerHTML = data.recommendations.map(item => {
+                        const itemName = typeof item === 'object' ? item.item : item;
+                        const imgPath = productImages[itemName] || '';
+                        const emoji = iconMap[itemName] || '📦';
+                        const imgHtml = imgPath ? `<img src="${imgPath}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">` : '';
+                        const emojiHtml = `<span style="display:${imgPath ? 'none' : 'block'}">${emoji}</span>`;
+                        
+                        // 🌟 从本地映射匹配来源人
+                        const sources = recMap[itemName] ? recMap[itemName].join('、') : '相似用户';
+                        
+                        return `
+                            <div class="product-card">
+                                <div class="product-img">${imgHtml}${emojiHtml}</div>
+                                <div class="product-info">
+                                    <div class="product-name">${itemName}</div>
+                                    <div class="product-meta">
+                                        <span>💡 ${sources}也喜欢</span>
+                                        <span class="product-price" style="color:#ff5000;">🔥 猜你喜欢</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else if (recContainer) {
+                    recContainer.innerHTML = '<div class="empty-state">暂无推荐商品</div>';
+                }
+            })
+            .catch(error => {
+                // 🌟 3. 后端挂了！启动容错兜底机制！
+                console.error("后端请求失败，启动前端本地计算兜底:", error);
+                
+                // 3.1 用本地计算的数据渲染相似用户
+                renderSimilarUsers(localSimilarUsers); 
+                
+                // 3.2 用本地计算的数据渲染推荐商品，并带上推荐理由
+                const recContainer = document.getElementById('backendRecommendList');
+                const recList = Object.keys(recMap).map(k => ({ item: k, sources: recMap[k] }));
+                
+                if (recContainer) {
+                    if (recList.length > 0) {
+                        recContainer.innerHTML = recList.map(x => {
+                            const item = x.item; const sources = x.sources;
+                            const imgPath = productImages[item] || ''; const emoji = iconMap[item] || '📦';
+                            const imgHtml = imgPath ? `<img src="${imgPath}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">` : '';
+                            const emojiHtml = `<span style="display:${imgPath ? 'none' : 'block'}">${emoji}</span>`;
+                            
+                            return `
+                                <div class="product-card">
+                                    <div class="product-img">${imgHtml}${emojiHtml}</div>
+                                    <div class="product-info">
+                                        <div class="product-name">${item}</div>
+                                        <div class="product-meta">
+                                            <span>💡 ${sources.join('、')}也喜欢</span>
+                                            <span class="product-price" style="color:#ff5000;">🔥 猜你喜欢</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                    } else {
+                        recContainer.innerHTML = '<div class="empty-state">暂无推荐商品</div>';
+                    }
+                }
+            });
+    }
+
+    function refreshAll() { renderPreferences(); renderCombinedHistory(); loadFromBackend(); }
+    window.addEventListener('resize', () => { if (myChart) myChart.resize(); });
+    refreshAll();
+    function logout() { sessionStorage.removeItem('currentUser'); window.location.href = 'login.html'; }
+  </script>
+</body>
+</html>

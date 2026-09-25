@@ -1,84 +1,268 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="zh-CN">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>智选商城 - 个性化推荐系统</title>
+  <script>
+    // 🧹 强制清理旧数据，确保与后端 data.py 一致
+    (function() {
+      const DATA_VERSION = 'v6'; 
+      if (localStorage.getItem('data_version') !== DATA_VERSION) {
+        localStorage.removeItem('shopping_users');
+        localStorage.setItem('data_version', DATA_VERSION);
+        console.log('[数据清理] 已切换到 v6，恢复到默认数据');
+      }
+    })();
 
-<meta charset="UTF-8">
-
-<title>
-电商推荐系统
-</title>
-
-<link rel="stylesheet" href="style.css">
-
+    if (!sessionStorage.getItem('currentUser')) {
+      window.location.href = 'login.html';
+    }
+  </script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f5f6f9; color: #333; -webkit-font-smoothing: antialiased; }
+    a { text-decoration: none; color: inherit; }
+    .top-nav { background: #ff5000; height: 38px; display: flex; align-items: center; color: #fff; font-size: 12px; padding: 0 20px; }
+    .top-nav-inner { max-width: 1280px; width: 100%; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+    .top-nav-links { display: flex; gap: 24px; align-items: center; }
+    .top-nav-links a { color: #fff; cursor: pointer; transition: opacity 0.2s; opacity: 0.9; }
+    .top-nav-links a:hover { opacity: 1; text-decoration: underline; }
+    .search-section { background: #fff; padding: 18px 0; border-bottom: 1px solid #f0f0f0; }
+    .search-section-inner { max-width: 1280px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; gap: 40px; }
+    .logo { font-size: 26px; font-weight: 900; color: #ff5000; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+    .search-box { flex: 1; max-width: 640px; display: flex; border: 2px solid #ff5000; border-radius: 22px; overflow: hidden; transition: box-shadow 0.2s; }
+    .search-box:focus-within { box-shadow: 0 0 0 4px rgba(255, 80, 0, 0.1); }
+    .search-box input { flex: 1; border: none; padding: 10px 20px; font-size: 14px; outline: none; background: #fff; color: #333; }
+    .search-box button { background: #ff5000; color: #fff; border: none; padding: 10px 32px; font-weight: 600; cursor: pointer; font-size: 14px; transition: background 0.2s; }
+    .search-box button:hover { background: #e64800; }
+    .header-user-info { color: #666; font-size: 13px; white-space: nowrap; }
+    .header-user-info #headerUser { color: #ff5000; font-weight: 600; }
+    .main-container { max-width: 1280px; margin: 20px auto; display: grid; grid-template-columns: 200px 1fr; gap: 20px; padding: 0 20px 40px; position: relative; }
+    .left-sidebar { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.04); border: 1px solid #eef0f3; position: sticky; top: 20px; z-index: 50; }
+    .category-title { background: #fff; border-bottom: 1px solid #f0f0f0; color: #333; padding: 14px 16px; font-size: 15px; font-weight: 700; border-radius: 12px 12px 0 0; }
+    .category-list { list-style: none; padding: 8px 0; position: relative; }
+    .category-list > li { padding: 11px 16px; font-size: 14px; color: #555; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; position: relative; }
+    .category-list > li:hover { background: #fff8f3; color: #ff5000; font-weight: 600; }
+    .category-list > li::after { content: '›'; position: absolute; right: 14px; font-size: 16px; color: #ccc; transition: color 0.2s; font-weight: normal; }
+    .category-list > li:hover::after { color: #ff5000; }
+    .sub-panel { position: absolute; left: 100%; top: 0; width: 620px; min-height: 100%; max-height: 520px; overflow-y: auto; background: #fff; border: 1px solid #eef0f3; border-left: none; border-radius: 0 12px 12px 0; box-shadow: 6px 4px 20px rgba(0,0,0,0.08); padding: 20px 24px; display: none; z-index: 100; text-align: left; font-weight: normal; }
+    .category-list > li:hover .sub-panel { display: block; }
+    .sub-panel .panel-tags { display: flex; flex-wrap: wrap; gap: 10px; padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid #f0f0f0; }
+    .sub-panel .panel-tags span { font-size: 13px; color: #333; background: #f5f6f9; padding: 5px 14px; border-radius: 16px; cursor: pointer; transition: all 0.2s; font-weight: normal; }
+    .sub-panel .panel-tags span:hover { background: #ff5000; color: #fff; }
+    .sub-panel .panel-row { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; font-size: 13px; line-height: 1.8; }
+    .sub-panel .panel-row-title { width: 80px; flex-shrink: 0; color: #333; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+    .sub-panel .panel-row-title::after { content: '>'; color: #ccc; font-size: 12px; }
+    .sub-panel .panel-row-items { flex: 1; color: #666; }
+    .sub-panel .panel-row-items a { color: #666; padding: 0 6px; transition: color 0.2s; white-space: nowrap; cursor: pointer; }
+    .sub-panel .panel-row-items a:hover { color: #ff5000; }
+    .center-content { display: flex; flex-direction: column; gap: 20px; }
+    .carousel { position: relative; width: 100%; aspect-ratio: 3.2 / 1; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.06); background: #f5f6f9; }
+    .carousel-track { display: flex; height: 100%; transition: transform 0.5s ease-in-out; }
+    .carousel-slide { min-width: 100%; height: 100%; position: relative; }
+    .carousel-slide img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
+    .carousel-arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; background: rgba(0,0,0,0.25); color: #fff; border: none; border-radius: 50%; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; opacity: 0.7; transition: all 0.3s; z-index: 10; }
+    .carousel:hover .carousel-arrow { opacity: 1; }
+    .carousel-arrow:hover { background: rgba(255,80,0,0.9); transform: translateY(-50%) scale(1.1); }
+    .carousel-arrow.prev { left: 14px; } .carousel-arrow.next { right: 14px; }
+    .carousel-dots { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 10; }
+    .carousel-dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.6); border: none; cursor: pointer; transition: all 0.3s; padding: 0; }
+    .carousel-dot.active { width: 24px; border-radius: 5px; background: #ff5000; }
+    .carousel-dot:hover { background: rgba(255,80,0,0.8); }
+    .card { background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.04); border: 1px solid #eef0f3; }
+    .card-title { font-size: 16px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; color: #1f2937; background: linear-gradient(90deg, #fff8f3 0%, #fff 100%); padding: 10px 16px; border-radius: 8px; border-left: 4px solid #ff5000; margin-left: -16px; margin-right: -16px; }
+    .card-title .subtitle { font-size: 12px; color: #999; font-weight: normal; margin-left: 6px; }
+    .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 16px; }
+    .product-card { background: #fff; border-radius: 12px; padding: 0; border: 1px solid #f0f0f0; transition: all 0.3s ease; cursor: pointer; display: flex; flex-direction: column; overflow: hidden; }
+    .product-card:hover { border-color: transparent; box-shadow: 0 12px 28px rgba(255,80,0,0.12); transform: translateY(-6px); }
+    .product-img-box { width: 100%; aspect-ratio: 1 / 1; overflow: hidden; background: #fafafa; display: flex; align-items: center; justify-content: center; position: relative; }
+    .product-img-box img { width: 100%; height: 100%; object-fit: cover; object-position: center; transition: transform 0.5s ease; }
+    .product-card:hover .product-img-box img { transform: scale(1.06); }
+    .product-img-box .emoji-fallback { font-size: 80px; display: none; line-height: 1; }
+    .img-badge { position: absolute; top: 10px; left: 10px; background: #ff5000; color: #fff; font-size: 11px; padding: 3px 8px; border-radius: 4px; font-weight: 500; z-index: 2; }
+    .product-info { padding: 12px 14px 14px; display: flex; flex-direction: column; flex: 1; }
+    .product-name { font-size: 14px; font-weight: 500; margin-bottom: 8px; color: #333; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 40px; }
+    .product-sales { font-size: 12px; color: #999; margin-bottom: 10px; }
+    .product-price { font-size: 20px; font-weight: 700; color: #ff5000; margin-bottom: 10px; line-height: 1; }
+    .product-price::before { content: "¥"; font-size: 14px; margin-right: 1px; font-weight: 500; }
+    .product-reason { font-size: 11px; color: #ff5000; background: #fff4ed; padding: 4px 10px; border-radius: 6px; display: inline-block; margin-top: auto; align-self: flex-start; font-weight: 500; }
+    .no-result { text-align: center; padding: 60px 40px; color: #999; font-size: 14px; width: 100%; }
+    .no-result span { font-size: 50px; display: block; margin-bottom: 12px; }
+    .footer { text-align: center; padding: 20px; color: #999; font-size: 12px; border-top: 1px solid #eef0f3; margin-top: 20px; }
+    @media (max-width: 900px) { .main-container { grid-template-columns: 1fr; } .left-sidebar { position: static; } .sub-panel { display: none !important; } }
+  </style>
 </head>
-
-
 <body>
 
+  <div class="top-nav">
+    <div class="top-nav-inner">
+      <div>📍 智选商城首页</div>
+      <div class="top-nav-links">
+        <span id="loginStatus">你好，请登录</span>
+        <a href="my-mall.html">我的商城</a>
+        <a href="login.html" id="logoutBtn" class="logout-btn" onclick="logout()">退出登录</a>
+      </div>
+    </div>
+  </div>
 
-<h1>
-🛒 电商用户偏好推荐系统
-</h1>
+  <div class="search-section">
+    <div class="search-section-inner">
+      <div class="logo">🛍️ 智选商城</div>
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="搜索你喜欢的商品..." onkeydown="if(event.key==='Enter') handleSearch()">
+        <button onclick="handleSearch()">搜索</button>
+      </div>
+      <div class="header-user-info">👤 当前用户：<span id="headerUser">未登录</span></div>
+    </div>
+  </div>
 
+  <div class="main-container">
+    <aside>
+      <div class="left-sidebar">
+        <div class="category-title">商品分类</div>
+        <ul class="category-list">
+          <li>📱 手机数码<div class="sub-panel"><div class="panel-tags"><span>手机</span><span>手机配件</span><span>平板</span><span>智能手表</span><span>数码相机</span></div><div class="panel-row"><div class="panel-row-title">手机通讯</div><div class="panel-row-items"><a>华为</a><a>小米</a><a>苹果</a><a>OPPO</a><a>vivo</a><a>荣耀</a><a>三星</a><a>一加</a><a>真我</a></div></div><div class="panel-row"><div class="panel-row-title">手机配件</div><div class="panel-row-items"><a>手机壳</a><a>贴膜</a><a>数据线</a><a>充电器</a><a>充电宝</a><a>手机支架</a><a>自拍杆</a></div></div><div class="panel-row"><div class="panel-row-title">数码</div><div class="panel-row-items"><a>平板电脑</a><a>智能手表</a><a>数码相机</a><a>运动相机</a><a>无人机</a><a>录音笔</a></div></div></div></li>
+          <li>💻 电脑办公<div class="sub-panel"><div class="panel-tags"><span>笔记本</span><span>台式机</span><span>显示器</span><span>键鼠</span><span>办公设备</span></div><div class="panel-row"><div class="panel-row-title">电脑整机</div><div class="panel-row-items"><a>笔记本</a><a>游戏本</a><a>台式机</a><a>一体机</a><a>服务器</a></div></div><div class="panel-row"><div class="panel-row-title">电脑配件</div><div class="panel-row-items"><a>显示器</a><a>显卡</a><a>主板</a><a>内存</a><a>硬盘</a><a>电源</a><a>机箱</a><a>散热器</a></div></div><div class="panel-row"><div class="panel-row-title">外设产品</div><div class="panel-row-items"><a>鼠标</a><a>键盘</a><a>U盘</a><a>移动硬盘</a><a>摄像头</a><a>耳机麦克风</a></div></div></div></li>
+          <li>🎧 耳机音响<div class="sub-panel"><div class="panel-tags"><span>耳机</span><span>音箱</span><span>麦克风</span><span>音频配件</span></div><div class="panel-row"><div class="panel-row-title">耳机</div><div class="panel-row-items"><a>蓝牙耳机</a><a>头戴式耳机</a><a>入耳式耳机</a><a>运动耳机</a><a>降噪耳机</a></div></div><div class="panel-row"><div class="panel-row-title">音箱</div><div class="panel-row-items"><a>蓝牙音箱</a><a>智能音箱</a><a>桌面音箱</a><a>户外音箱</a><a>组合音响</a></div></div><div class="panel-row"><div class="panel-row-title">音频配件</div><div class="panel-row-items"><a>麦克风</a><a>声卡</a><a>耳机架</a><a>耳塞套</a><a>音频线</a></div></div></div></li>
+          <li>⌚ 智能穿戴<div class="sub-panel"><div class="panel-tags"><span>智能手表</span><span>智能手环</span><span>VR/AR</span></div><div class="panel-row"><div class="panel-row-title">智能手表</div><div class="panel-row-items"><a>Apple Watch</a><a>华为手表</a><a>小米手表</a><a>三星手表</a><a>佳明</a><a>华米</a></div></div><div class="panel-row"><div class="panel-row-title">智能手环</div><div class="panel-row-items"><a>小米手环</a><a>华为手环</a><a>荣耀手环</a><a>乐心</a><a>dido</a></div></div><div class="panel-row"><div class="panel-row-title">VR/AR</div><div class="panel-row-items"><a>VR眼镜</a><a>AR眼镜</a><a>智能眼镜</a><a>体感设备</a></div></div></div></li>
+          <li>🔋 充电配件<div class="sub-panel"><div class="panel-tags"><span>充电宝</span><span>充电器</span><span>数据线</span><span>车载充电</span></div><div class="panel-row"><div class="panel-row-title">移动电源</div><div class="panel-row-items"><a>充电宝</a><a>无线充电宝</a><a>太阳能充电宝</a><a>磁吸充电宝</a></div></div><div class="panel-row"><div class="panel-row-title">充电器</div><div class="panel-row-items"><a>快充充电器</a><a>氮化镓充电器</a><a>多口充电器</a><a>无线充电器</a><a>车载充电器</a></div></div><div class="panel-row"><div class="panel-row-title">数据线</div><div class="panel-row-items"><a>Type-C</a><a>Lightning</a><a>Micro USB</a><a>三合一数据线</a><a>快充数据线</a></div></div></div></li>
+          <li>👔 男装女装<div class="sub-panel"><div class="panel-tags"><span>男装</span><span>女装</span><span>内衣</span><span>配饰</span></div><div class="panel-row"><div class="panel-row-title">男装</div><div class="panel-row-items"><a>T恤</a><a>衬衫</a><a>夹克</a><a>卫衣</a><a>牛仔裤</a><a>休闲裤</a><a>西装</a></div></div><div class="panel-row"><div class="panel-row-title">女装</div><div class="panel-row-items"><a>连衣裙</a><a>上衣</a><a>半身裙</a><a>卫衣</a><a>牛仔裤</a><a>套装</a></div></div><div class="panel-row"><div class="panel-row-title">配饰</div><div class="panel-row-items"><a>帽子</a><a>围巾</a><a>腰带</a><a>袜子</a><a>手套</a></div></div></div></li>
+          <li>💄 美妆护肤<div class="sub-panel"><div class="panel-tags"><span>护肤</span><span>彩妆</span><span>香水</span><span>洗护</span></div><div class="panel-row"><div class="panel-row-title">护肤</div><div class="panel-row-items"><a>洁面</a><a>爽肤水</a><a>面霜</a><a>精华</a><a>面膜</a><a>防晒</a></div></div><div class="panel-row"><div class="panel-row-title">彩妆</div><div class="panel-row-items"><a>口红</a><a>粉底</a><a>眼影</a><a>腮红</a><a>眉笔</a><a>睫毛膏</a></div></div><div class="panel-row"><div class="panel-row-title">香水</div><div class="panel-row-items"><a>女士香水</a><a>男士香水</a><a>中性香水</a></div></div></div></li>
+          <li>🏠 家居生活<div class="sub-panel"><div class="panel-tags"><span>家纺</span><span>厨具</span><span>收纳</span><span>清洁</span></div><div class="panel-row"><div class="panel-row-title">家纺</div><div class="panel-row-items"><a>四件套</a><a>被子</a><a>枕头</a><a>毯子</a><a>蚊帐</a></div></div><div class="panel-row"><div class="panel-row-title">厨具</div><div class="panel-row-items"><a>锅具</a><a>刀具</a><a>餐具</a><a>水杯</a><a>保温杯</a><a>咖啡具</a></div></div><div class="panel-row"><div class="panel-row-title">收纳</div><div class="panel-row-items"><a>收纳箱</a><a>收纳柜</a><a>挂钩</a><a>衣架</a><a>置物架</a></div></div></div></li>
+        </ul>
+      </div>
+    </aside>
 
+    <main class="center-content">
+      <div class="carousel" id="carousel">
+        <div class="carousel-track" id="carouselTrack">
+          <div class="carousel-slide"><img src="images/banner.jpg" alt="横幅1" onerror="this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,#ff8c00,#ff5000)'; this.parentElement.innerHTML='<div style=\'height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:42px;font-weight:900;letter-spacing:8px\'>限时抢购 低至5折</div>';"></div>
+          <div class="carousel-slide"><img src="images/banner2.jpg" alt="横幅2" onerror="this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,#ffd8bf,#ff8c00)'; this.parentElement.innerHTML='<div style=\'height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:42px;font-weight:900;letter-spacing:8px\'>新品首发 尝鲜特惠</div>';"></div>
+          <div class="carousel-slide"><img src="images/banner3.jpg" alt="横幅3" onerror="this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,#ffe0cc,#ff6a00)'; this.parentElement.innerHTML='<div style=\'height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:42px;font-weight:900;letter-spacing:8px\'>爆款直降 先到先得</div>';"></div>
+        </div>
+        <button class="carousel-arrow prev" onclick="prevSlide()">❮</button>
+        <button class="carousel-arrow next" onclick="nextSlide()">❯</button>
+        <div class="carousel-dots" id="carouselDots"></div>
+      </div>
 
-<div class="box">
+      <div class="card" id="searchResultCard" style="display:none;">
+        <div class="card-title">搜索结果 <span class="subtitle" id="searchKeywordLabel"></span></div>
+        <div class="product-grid" id="searchResultList"></div>
+      </div>
 
-<h2>
-相似用户
-</h2>
+      <div id="recommendArea">
+        <div id="users" style="display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px;"></div>
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-title">共同偏好商品 <span class="subtitle">A ∩ B</span></div>
+          <div class="product-grid" id="commonList"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">为你推荐 <span class="subtitle">相似用户购买过，而你没有</span></div>
+          <div class="product-grid" id="recList"></div>
+        </div>
+      </div>
+    </main>
+  </div>
 
+  <div class="footer">智选商城用户偏好推荐系统 | 基于 Jaccard 相似度计算 | 前后端分离实验</div>
 
-<div id="users">
+  <script>
+    let currentSlide = 0; const totalSlides = 3; let autoPlayTimer = null;
+    function initCarousel() {
+      const dotsContainer = document.getElementById('carouselDots');
+      for (let i = 0; i < totalSlides; i++) { const dot = document.createElement('button'); dot.className = 'carousel-dot' + (i === 0 ? ' active' : ''); dot.onclick = () => goToSlide(i); dotsContainer.appendChild(dot); }
+      startAutoPlay();
+      document.getElementById('carousel').addEventListener('mouseenter', () => clearInterval(autoPlayTimer));
+      document.getElementById('carousel').addEventListener('mouseleave', startAutoPlay);
+    }
+    function updateCarousel() { document.getElementById('carouselTrack').style.transform = `translateX(-${currentSlide * 100}%)`; document.querySelectorAll('.carousel-dot').forEach((dot, i) => dot.classList.toggle('active', i === currentSlide)); }
+    function nextSlide() { currentSlide = (currentSlide + 1) % totalSlides; updateCarousel(); }
+    function prevSlide() { currentSlide = (currentSlide - 1 + totalSlides) % totalSlides; updateCarousel(); }
+    function goToSlide(index) { currentSlide = index; updateCarousel(); }
+    function startAutoPlay() { clearInterval(autoPlayTimer); autoPlayTimer = setInterval(nextSlide, 3500); }
 
-加载中...
+    const loggedInUser = sessionStorage.getItem('currentUser');
+    if (loggedInUser) { document.getElementById('loginStatus').innerText = `你好，${loggedInUser}`; document.getElementById('headerUser').innerText = loggedInUser; }
+    function logout() { sessionStorage.removeItem('currentUser'); window.location.href = 'login.html'; }
 
-</div>
+    let currentUser = loggedInUser || '张三';
+    
+    // 🌟 前端本地兜底数据，已与后端 data.py 完全对齐
+    let allUsers = {
+      "张三": ["手机", "充电宝", "手表", "笔记本"],
+      "李四": ["手机", "耳机", "笔记本", "相机"],
+      "王五": ["耳机", "充电宝", "数据线", "鼠标"],
+      "赵六": ["手表", "手环", "音箱", "显示器"],
+      "陈七": ["键盘", "鼠标", "显示器"],
+      "刘八": ["相机", "音箱", "手机"]
+    };
 
+    try {
+      const saved = localStorage.getItem('shopping_users');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        for (let name in parsed) {
+          if (parsed[name].preferences) allUsers[name] = parsed[name].preferences;
+          else allUsers[name] = parsed[name];
+        }
+      }
+    } catch(e) {}
 
-</div>
+    let allProducts = ["手机", "耳机", "充电宝", "笔记本", "数据线", "手表", "手环", "平板", "键盘", "鼠标", "相机", "音箱", "显示器"];
+    const mockImages = { "手机": "images/phone.jpg", "耳机": "images/headphone.jpg", "充电宝": "images/powerbank.jpg", "笔记本": "images/laptop.jpg", "数据线": "images/cable.jpg", "手表": "images/watch.jpg", "手环": "images/band.jpg", "平板": "images/tablet.jpg", "相机": "images/camera.jpg", "鼠标": "images/mouse.jpg", "音箱": "images/speaker.jpg", "显示器": "images/monitor.jpg", "键盘": "images/keyboard.jpg" };
+    const mockPrices = { "手机": 2999, "耳机": 899, "充电宝": 129, "笔记本": 5999, "数据线": 29, "手表": 1999, "手环": 199, "平板": 3299, "相机": 4999, "鼠标": 99, "音箱": 499, "显示器": 1299, "键盘": 299 };
+    const mockSales = { "手机": 12000, "耳机": 8500, "充电宝": 23000, "笔记本": 3200, "数据线": 45000, "手表": 1800, "手环": 6500, "平板": 4200, "相机": 1000, "鼠标": 12000, "音箱": 3400, "显示器": 2100, "键盘": 5600 };
+    const iconMap = { '手机':'📱','耳机':'🎧','充电宝':'🔋','笔记本':'💻','数据线':'🔌','手表':'⌚','手环':'⌚','平板':'📟','相机':'📷','鼠标':'🖱️','音箱':'🔊','显示器':'🖥️','键盘':'⌨️' };
 
+    function resolvePrice(itemName) { return mockPrices[itemName] || 199; }
+    function resolveSales(itemName) { return mockSales[itemName] || 1000; }
+    function resolveImage(itemName) { return mockImages[itemName] || null; }
+    function resolveEmoji(itemName) { return iconMap[itemName] || '📦'; }
 
+    function buildProductCard(itemData, opts = {}) {
+      const isObj = typeof itemData === 'object' && itemData !== null;
+      const itemName = isObj ? itemData.name : itemData;
+      const imgPath = resolveImage(itemName); const price = resolvePrice(itemName); const sales = resolveSales(itemName); const emoji = resolveEmoji(itemName);
+      const imgHtml = imgPath ? `<img src="${imgPath}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'"><span class="emoji-fallback">${emoji}</span>` : `<span class="emoji-fallback" style="display:block;">${emoji}</span>`;
+      const badge = opts.badge || '热卖'; const reason = opts.reason ? `<div class="product-reason">${opts.reason}</div>` : '';
+      return `<div class="product-card"><div class="product-img-box">${imgHtml}<span class="img-badge">${badge}</span></div><div class="product-info"><div class="product-name">${itemName}</div><div class="product-sales">已售 ${sales}+ 件</div><div class="product-price">${price}</div>${reason}</div></div>`;
+    }
 
+    function renderCommonList(arr) { document.getElementById('commonList').innerHTML = arr.length ? arr.map(item => buildProductCard(item, { badge: '热卖' })).join('') : '<div class="no-result"><span>📦</span>暂无共同偏好</div>'; }
+    function renderRecList(arr) { document.getElementById('recList').innerHTML = arr.length ? arr.map(x => { const itemName = x.item || x.name; const sources = x.sources || []; return buildProductCard({ name: itemName }, { badge: '推荐', reason: `💡 ${sources.join('、')}也喜欢` }); }).join('') : '<div class="no-result"><span>🎁</span>暂无推荐商品</div>'; }
 
-<div class="box">
+    function localFallbackRender(currentItems) {
+      const A = currentItems; document.getElementById('headerUser').innerText = currentUser;
+      let sims = [];
+      for (let u in allUsers) { if (u === currentUser) continue; const B = allUsers[u]; const inter = A.filter(i => B.includes(i)); const union = [...new Set([...A, ...B])]; const sim = union.length === 0 ? 0 : inter.length / union.length; sims.push({ user: u, preferences: B, sim, inter, union, diff: B.filter(i => !A.includes(i)) }); }
+      sims.sort((a, b) => b.sim - a.sim); const top3 = sims.slice(0, 3);
+      let commonSet = new Set(); top3.forEach(x => x.inter.forEach(i => commonSet.add(i))); renderCommonList([...commonSet]);
+      let recMap = {}; top3.forEach(x => x.diff.forEach(p => { if(!recMap[p]) recMap[p]=[]; recMap[p].push(x.user); })); renderRecList(Object.keys(recMap).map(k => ({ item: k, sources: recMap[k] })));
+    }
 
-<h2>
-共同偏好商品
-</h2>
+    function handleSearch() {
+      const keyword = document.getElementById('searchInput').value.trim();
+      const searchCard = document.getElementById('searchResultCard'); const searchList = document.getElementById('searchResultList'); const recommendArea = document.getElementById('recommendArea'); const keywordLabel = document.getElementById('searchKeywordLabel');
+      if (keyword === '') { searchCard.style.display = 'none'; recommendArea.style.display = 'block'; return; }
+      let matched = allProducts.filter(item => item.toLowerCase().includes(keyword.toLowerCase()));
+      if (matched.length === 0) matched = [keyword];
+      searchCard.style.display = 'block'; recommendArea.style.display = 'none'; keywordLabel.innerText = `"${keyword}" 共找到 ${matched.length} 件商品`;
+      searchList.innerHTML = matched.map(item => buildProductCard(item, { badge: '搜索' })).join('');
+      searchCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 
+    function searchKeyword(keyword) { document.getElementById('searchInput').value = keyword; handleSearch(); }
+    function bindCategoryClicks() {
+      document.querySelectorAll('.sub-panel .panel-row-items a, .sub-panel .panel-tags span').forEach(el => {
+        el.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); searchKeyword(this.innerText.trim()); });
+      });
+    }
+    document.getElementById('searchInput').addEventListener('input', function() { if (this.value.trim() === '') { document.getElementById('searchResultCard').style.display = 'none'; document.getElementById('recommendArea').style.display = 'block'; } });
 
-<div id="common">
-
-</div>
-
-
-</div>
-
-
-
-
-
-<div class="box">
-
-<h2>
-猜你喜欢
-</h2>
-
-
-<div id="products">
-
-</div>
-
-
-</div>
-
-
-
-<script src="main.js"></script>
-
-
+    initCarousel();
+    localFallbackRender(allUsers[currentUser] || []);
+    bindCategoryClicks();
+  </script>
 </body>
-
 </html>
