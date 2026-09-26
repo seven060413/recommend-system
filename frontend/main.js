@@ -3,7 +3,7 @@ function loadRecommend() {
     let username = sessionStorage.getItem('currentUser') || '张三';
 
     // 2. 发起后端请求
-    fetch(`https://recommend-frontend-9l0y.onrender.com/recommend/${username}`)
+    fetch(`https://recommend-backend-a5g7.onrender.com/recommend/${username}`)
         .then(response => {
             if (!response.ok) throw new Error(`HTTP 错误: ${response.status}`);
             return response.json();

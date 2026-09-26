@@ -310,7 +310,7 @@
         localSimilarUsers.forEach(x => x.diff.forEach(p => { if(!recMap[p]) recMap[p]=[]; recMap[p].push(x.user); }));
 
         // 🌟 2. 尝试请求后端
-        fetch(`http://127.0.0.1:5000/recommend/${username}`)
+       fetch(`https://recommend-backend-a5g7.onrender.com/recommend/${username}`)
             .then(response => {
                 if (!response.ok) throw new Error(`HTTP 错误: ${response.status}`);
                 return response.json();
