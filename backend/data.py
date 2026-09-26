@@ -63,12 +63,22 @@ users = {
 
     "刘八": {
         "preferences": [
-            "相机",
-            "音箱",
-            "手机"
+            "手机",
+            "充电宝",
+            "手表",
+            "笔记本"
         ],
         "viewHistory": [],
         "buyHistory": []
+    },
+
+    "测试用户": {
+        "preferences": [],
+        "viewHistory": [],
+        "buyHistory": []
     }
+
+
+
 
 }
