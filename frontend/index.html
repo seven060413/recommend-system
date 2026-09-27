@@ -188,16 +188,16 @@
 
     let currentUser = loggedInUser || '张三';
     
-    // 🌟 前端本地兜底数据，已与后端 data.py 完全对齐
-    let allUsers = {
-      "张三": ["手机", "充电宝", "手表", "笔记本"],
-      "李四": ["手机", "耳机", "笔记本", "相机"],
-      "王五": ["耳机", "充电宝", "数据线", "鼠标"],
-      "赵六": ["手表", "手环", "音箱", "显示器"],
-      "陈七": ["键盘", "鼠标", "显示器"],
-      "刘八": ["手机", "充电宝", "手表", "笔记本"],
-      "测试用户": [],
-    };
+    // // 🌟 前端本地兜底数据，已与后端 data.py 完全对齐
+    // let allUsers = {
+    //   "张三": ["手机", "充电宝", "手表", "笔记本"],
+    //   "李四": ["手机", "耳机", "笔记本", "相机"],
+    //   "王五": ["耳机", "充电宝", "数据线", "鼠标"],
+    //   "赵六": ["手表", "手环", "音箱", "显示器"],
+    //   "陈七": ["键盘", "鼠标", "显示器"],
+    //   "刘八": ["手机", "充电宝", "手表", "笔记本"],
+    //   "测试用户": [],
+    // };
 
     try {
       const saved = localStorage.getItem('shopping_users');
@@ -433,15 +433,15 @@
 
     function renderCommonList(arr) { document.getElementById('commonList').innerHTML = arr.length ? arr.map(item => buildProductCard(item, { badge: '热卖' })).join('') : '<div class="no-result"><span>📦</span>暂无共同偏好</div>'; }
     function renderRecList(arr) { document.getElementById('recList').innerHTML = arr.length ? arr.map(x => { const itemName = x.item || x.name; const sources = x.sources || []; return buildProductCard({ name: itemName }, { badge: '推荐', reason: `💡 ${sources.join('、')}也喜欢` }); }).join('') : '<div class="no-result"><span>🎁</span>暂无推荐商品</div>'; }
-
-    function localFallbackRender(currentItems) {
-      const A = currentItems; document.getElementById('headerUser').innerText = currentUser;
-      let sims = [];
-      for (let u in allUsers) { if (u === currentUser) continue; const B = allUsers[u]; const inter = A.filter(i => B.includes(i)); const union = [...new Set([...A, ...B])]; const sim = union.length === 0 ? 0 : inter.length / union.length; sims.push({ user: u, preferences: B, sim, inter, union, diff: B.filter(i => !A.includes(i)) }); }
-      sims.sort((a, b) => b.sim - a.sim); const top3 = sims.slice(0, 3);
-      let commonSet = new Set(); top3.forEach(x => x.inter.forEach(i => commonSet.add(i))); renderCommonList([...commonSet]);
-      let recMap = {}; top3.forEach(x => x.diff.forEach(p => { if(!recMap[p]) recMap[p]=[]; recMap[p].push(x.user); })); renderRecList(Object.keys(recMap).map(k => ({ item: k, sources: recMap[k] })));
-    }
+    // 纯前端代替Js
+    // function localFallbackRender(currentItems) {
+    //   const A = currentItems; document.getElementById('headerUser').innerText = currentUser;
+    //   let sims = [];
+    //   for (let u in allUsers) { if (u === currentUser) continue; const B = allUsers[u]; const inter = A.filter(i => B.includes(i)); const union = [...new Set([...A, ...B])]; const sim = union.length === 0 ? 0 : inter.length / union.length; sims.push({ user: u, preferences: B, sim, inter, union, diff: B.filter(i => !A.includes(i)) }); }
+    //   sims.sort((a, b) => b.sim - a.sim); const top3 = sims.slice(0, 3);
+    //   let commonSet = new Set(); top3.forEach(x => x.inter.forEach(i => commonSet.add(i))); renderCommonList([...commonSet]);
+    //   let recMap = {}; top3.forEach(x => x.diff.forEach(p => { if(!recMap[p]) recMap[p]=[]; recMap[p].push(x.user); })); renderRecList(Object.keys(recMap).map(k => ({ item: k, sources: recMap[k] })));
+    // }
 
     function handleSearch() {
       const keyword = document.getElementById('searchInput').value.trim();
@@ -463,8 +463,29 @@
     document.getElementById('searchInput').addEventListener('input', function() { if (this.value.trim() === '') { document.getElementById('searchResultCard').style.display = 'none'; document.getElementById('recommendArea').style.display = 'block'; } });
 
     initCarousel();
-    localFallbackRender(allUsers[currentUser] || []);
+    // localFallbackRender(allUsers[currentUser] || []);
+    // loadRecommend(); 
     bindCategoryClicks();
   </script>
+
+    <!-- ========================================== -->
+    <!-- 3. 【核心修改】在这里引入同目录下的 main.js -->
+    <!-- ========================================== -->
+    <script src="main.js"></script>
+
+    <!-- ========================================== -->
+    <!-- 4. 确保 main.js 加载完毕后，再安全调用里面的函数 -->
+    <!-- ========================================== -->
+    <script>
+      // 等待页面所有元素加载完毕，且 main.js 也执行完毕后，再呼叫后端
+      document.addEventListener('DOMContentLoaded', function() {
+          if (typeof loadRecommend === 'function') {
+              console.log("✅ 成功从 main.js 加载 loadRecommend，开始请求后端...");
+              loadRecommend(); 
+          } else {
+              console.error("❌ 找不到 loadRecommend！请检查 main.js 文件是否在同级目录，且函数没有被包裹在其他函数内。");
+          }
+      });
+    </script>
 </body>
 </html>

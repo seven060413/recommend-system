@@ -12,7 +12,7 @@ def compute_jaccard(A,B):
         x for x in A
         if x in B
     ]
-
+   # 计算并集(可优化)
     union=list(set(A+B))
 
 
