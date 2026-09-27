@@ -6,14 +6,14 @@ from data import users
 # Jaccard
 # =====================
 
-def compute_jaccard(A,B):
+def compute_jaccard(A, B):
 
-    intersection=[
-        x for x in A
-        if x in B
-    ]
-   # 计算并集(可优化)
-    union=list(set(A+B))
+    set_A=set(A)
+    set_B=set(B)
+
+    intersection=set_A & set_B
+
+    union=set_A | set_B
 
 
     sim=0
@@ -23,11 +23,10 @@ def compute_jaccard(A,B):
 
 
     return {
-        "intersection":intersection,
-        "union":union,
+        "intersection":list(intersection),
+        "union":list(union),
         "sim":sim
     }
-
 
 
 # =====================
@@ -36,11 +35,17 @@ def compute_jaccard(A,B):
 
 def get_similar_users(current_user):
 
+# 用户不存在处理
+    if current_user not in users:
+        return []
 
-    A=users[current_user]["preferences"]
+
+    A = users[current_user].get(
+        "preferences",
+        []
+    )
 
     results=[]
-
 
     for name in users:
 
@@ -48,7 +53,7 @@ def get_similar_users(current_user):
             continue
 
 
-        B=users[name]["preferences"]
+        B = users[name].get("preferences",[])
 
 
         score=compute_jaccard(A,B)
