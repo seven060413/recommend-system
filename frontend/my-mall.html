@@ -165,38 +165,7 @@
      const productImages = { "手机": "images/phone.jpg", "耳机": "images/headphone.jpg", "充电宝": "images/powerbank.jpg", "笔记本": "images/laptop.jpg", "数据线": "images/cable.jpg", "手表": "images/watch.jpg", "手环": "images/band.jpg", "平板": "images/tablet.jpg", "相机": "images/camera.jpg", "鼠标": "images/mouse.jpg", "音箱": "images/speaker.jpg", "显示器": "images/monitor.jpg", "键盘": "images/keyboard.jpg" };
      const iconMap = { '手机':'📱','耳机':'🎧','充电宝':'🔋','笔记本':'💻','数据线':'🔌','手表':'⌚','手环':'⌚','平板':'📟','相机':'📷','鼠标':'🖱️','音箱':'🔊','显示器':'🖥️', '键盘':'⌨️' };
     
-    // const defaultUsers = {
-    //   "张三": { preferences: ["手机", "充电宝", "手表", "笔记本"], viewHistory: [], buyHistory: [] },
-    //   "李四": { preferences: ["手机", "耳机", "笔记本", "相机"], viewHistory: [], buyHistory: [] },
-    //   "王五": { preferences: ["耳机", "充电宝", "数据线", "鼠标"], viewHistory: [], buyHistory: [] },
-    //   "赵六": { preferences: ["手表", "手环", "音箱", "显示器"], viewHistory: [], buyHistory: [] },
-    //   "陈七": { preferences: ["键盘", "鼠标", "显示器"], viewHistory: [], buyHistory: [] },
-    //   "刘八": { preferences: ["手机", "充电宝", "手表", "笔记本"], viewHistory: [], buyHistory: [] },
-    //   "测试用户": { preferences: [], viewHistory: [], buyHistory: [] },
-    // };
-
-    // let allUsers = JSON.parse(JSON.stringify(defaultUsers));
     
-    // try {
-    //   const saved = localStorage.getItem('shopping_users');
-    //   if (saved) {
-    //     const parsed = JSON.parse(saved);
-    //     for (let name in parsed) {
-    //       if (allUsers[name]) allUsers[name].preferences = parsed[name].preferences || [];
-    //     }
-    //   }
-    // } catch(e) { console.warn('读取本地数据失败', e); }
-
-    // let currentUser = loggedInUser;
-    // if (!allUsers[currentUser]) allUsers[currentUser] = { preferences: [], viewHistory: [], buyHistory: [] };
-
-    // for (let name in allUsers) { 
-    //     const prefs = allUsers[name].preferences || [];
-    //     const today = new Date().toISOString().split('T')[0];
-    //     allUsers[name].viewHistory = prefs.map(item => ({ item: item, image: productImages[item] || '', price: "¥" + (Math.floor(Math.random() * 4000) + 100), time: today }));
-    //     allUsers[name].buyHistory = prefs.map(item => ({ item: item, image: productImages[item] || '', price: "¥" + (Math.floor(Math.random() * 4000) + 100), time: today }));
-    // }
-        // 🌟 简化后：allUsers 初始为空，等待从后端获取
     let allUsers = {};
     let currentUser = sessionStorage.getItem('currentUser') || '张三';
 
@@ -204,8 +173,8 @@
     async function initAppData() {
         try {
             // 1. 优先从后端获取权威用户数据
-            // const response = await fetch('https://recommend-backend-a5g7.onrender.com/api/users');
-            const response = await fetch('http://127.0.0.1:5000/api/users');
+            const response = await fetch('https://recommend-backend-a5g7.onrender.com/api/users');
+            // const response = await fetch('http://127.0.0.1:5000/api/users');
             if (response.ok) {
                 allUsers = await response.json();
                 console.log("✅ 从后端成功加载权威用户数据");
@@ -347,8 +316,8 @@
         const username = currentUser || sessionStorage.getItem('currentUser') || '张三';
         console.log("📡 正在向后端请求推荐数据:", username);
 
-        // fetch(`https://recommend-backend-a5g7.onrender.com/recommend/${username}`)
-        fetch(`http://127.0.0.1:5000/recommend/${username}`)
+        fetch(`https://recommend-backend-a5g7.onrender.com/recommend/${username}`)
+        // fetch(`http://127.0.0.1:5000/recommend/${username}`)
             .then(response => {
                 if (!response.ok) throw new Error(`HTTP 错误: ${response.status}`);
                 return response.json();
