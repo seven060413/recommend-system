@@ -310,62 +310,81 @@
     }
 
     // ============================================================
-    // 3. 核心：纯粹的后端请求，极简兜底
-    // ============================================================
-    function loadFromBackend() {
-        const username = currentUser || sessionStorage.getItem('currentUser') || '张三';
-        console.log("📡 正在向后端请求推荐数据:", username);
+// 3. 核心：纯粹的后端请求，极简兜底
+// ============================================================
+function loadFromBackend() {
+    const username = currentUser || sessionStorage.getItem('currentUser') || '张三';
+    console.log("📡 正在向后端请求推荐数据:", username);
 
-        fetch(`https://recommend-backend-a5g7.onrender.com/recommend/${username}`)
-        // fetch(`http://127.0.0.1:5000/recommend/${username}`)
-            .then(response => {
-                if (!response.ok) throw new Error(`HTTP 错误: ${response.status}`);
-                return response.json();
-            })
-            .then(data => {
-                console.log("✅ 后端返回成功:", data);
+    fetch(`https://recommend-backend-a5g7.onrender.com/recommend/${username}`)
+    // fetch(`http://127.0.0.1:5000/recommend/${username}`)
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP 错误: ${response.status}`);
+            return response.json();
+        })
+        .then(data => {
+            console.log("✅ 后端返回成功:", data);
 
-                // 渲染相似用户 (直接使用后端数据)
-                if (data.similar_users && data.similar_users.length > 0) {
-                    renderSimilarUsers(data.similar_users);
-                } else {
-                    document.getElementById('similarUsersList').innerHTML = '<div class="empty-state">暂无相似用户</div>';
-                }
+            // 渲染相似用户 (直接使用后端数据)
+            if (data.similar_users && data.similar_users.length > 0) {
+                renderSimilarUsers(data.similar_users);
+            } else {
+                document.getElementById('similarUsersList').innerHTML = '<div class="empty-state">暂无相似用户</div>';
+            }
 
-                // 渲染推荐商品
-                const recContainer = document.getElementById('backendRecommendList');
-                if (recContainer && data.recommendations && data.recommendations.length > 0) {
-                    recContainer.innerHTML = data.recommendations.map(item => {
-                        const itemName = typeof item === 'object' ? item.item : item;
-                        const imgPath = productImages[itemName] || '';
-                        const emoji = iconMap[itemName] || '📦';
-                        const imgHtml = imgPath ? `<img src="${imgPath}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">` : '';
-                        const emojiHtml = `<span style="display:${imgPath ? 'none' : 'block'}">${emoji}</span>`;
-                        
-                        return `
-                            <div class="product-card">
-                                <div class="product-img">${imgHtml}${emojiHtml}</div>
-                                <div class="product-info">
-                                    <div class="product-name">${itemName}</div>
-                                    <div class="product-meta">
-                                        <span>💡 相似用户也喜欢</span>
-                                        <span class="product-price" style="color:#ff5000;">🔥 猜你喜欢</span>
-                                    </div>
+            // 🌟 核心改进：构建商品到用户的映射关系
+            const itemToUsers = {};
+            if (data.similar_users && data.similar_users.length > 0) {
+                data.similar_users.forEach(similarUser => {
+                    if (similarUser.preferences && Array.isArray(similarUser.preferences)) {
+                        similarUser.preferences.forEach(item => {
+                            if (!itemToUsers[item]) {
+                                itemToUsers[item] = [];
+                            }
+                            itemToUsers[item].push(similarUser.user);
+                        });
+                    }
+                });
+            }
+
+            // 渲染推荐商品
+            const recContainer = document.getElementById('backendRecommendList');
+            if (recContainer && data.recommendations && data.recommendations.length > 0) {
+                recContainer.innerHTML = data.recommendations.map(item => {
+                    const itemName = typeof item === 'object' ? item.item : item;
+                    const imgPath = productImages[itemName] || '';
+                    const emoji = iconMap[itemName] || '📦';
+                    const imgHtml = imgPath ? `<img src="${imgPath}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">` : '';
+                    const emojiHtml = `<span style="display:${imgPath ? 'none' : 'block'}">${emoji}</span>`;
+                    
+                    // 🌟 获取喜欢这个商品的具体用户
+                    const usersWhoLikeThis = itemToUsers[itemName] || [];
+                    const usersText = usersWhoLikeThis.length > 0 ? usersWhoLikeThis.join('、') : '相似用户';
+                    
+                    return `
+                        <div class="product-card">
+                            <div class="product-img">${imgHtml}${emojiHtml}</div>
+                            <div class="product-info">
+                                <div class="product-name">${itemName}</div>
+                                <div class="product-meta">
+                                    <span>💡 ${usersText}也喜欢</span>
+                                    <span class="product-price" style="color:#ff5000;">🔥 猜你喜欢</span>
                                 </div>
                             </div>
-                        `;
-                    }).join('');
-                } else if (recContainer) {
-                    recContainer.innerHTML = '<div class="empty-state">暂无推荐商品</div>';
-                }
-            })
-            .catch(error => {
-                console.error("⚠️ 后端请求失败:", error);
-                document.getElementById('similarUsersList').innerHTML = '<div class="empty-state">⚠️ 后端服务暂不可用，请稍后再试</div>';
-                const recContainer = document.getElementById('backendRecommendList');
-                if (recContainer) recContainer.innerHTML = '<div class="empty-state">⚠️ 推荐服务暂不可用</div>';
-            });
-    }
+                        </div>
+                    `;
+                }).join('');
+            } else if (recContainer) {
+                recContainer.innerHTML = '<div class="empty-state">暂无推荐商品</div>';
+            }
+        })
+        .catch(error => {
+            console.error("️ 后端请求失败:", error);
+            document.getElementById('similarUsersList').innerHTML = '<div class="empty-state">⚠️ 后端服务暂不可用，请稍后再试</div>';
+            const recContainer = document.getElementById('backendRecommendList');
+            if (recContainer) recContainer.innerHTML = '<div class="empty-state">⚠️ 推荐服务暂不可用</div>';
+        });
+}
 
     // 4. 统一刷新入口
     function refreshAll() { 
