@@ -84,6 +84,14 @@ def recommend(username):
 
     # 当前用户喜欢
     current_pref = users[username]["preferences"]
+    # 🌟 边界情况处理：冷启动（用户没有任何偏好）
+    if not current_pref:
+        return {
+            "user": username,
+            "similar_users": [],  # 没有相似用户
+            "recommendations": ["手机", "耳机", "笔记本", "充电宝"], # 降级：直接推荐全局热门商品
+            "is_cold_start": True # 标记：告诉前端这是冷启动状态
+        }
 
 
     # 找相似用户
