@@ -350,6 +350,9 @@ function loadFromBackend() {
             // 渲染推荐商品
             const recContainer = document.getElementById('backendRecommendList');
             if (recContainer && data.recommendations && data.recommendations.length > 0) {
+                // 🌟 判断是否是冷启动新用户
+                const isColdStart = data.is_cold_start || false;
+                
                 recContainer.innerHTML = data.recommendations.map(item => {
                     const itemName = typeof item === 'object' ? item.item : item;
                     const imgPath = productImages[itemName] || '';
@@ -360,20 +363,22 @@ function loadFromBackend() {
                     // 🌟 获取喜欢这个商品的具体用户
                     const usersWhoLikeThis = itemToUsers[itemName] || [];
                     const usersText = usersWhoLikeThis.length > 0 ? usersWhoLikeThis.join('、') : '相似用户';
-                    
+                    const reasonText = isColdStart 
+                        ? "🔥 新手热门精选" 
+                        : `💡 ${usersText}也喜欢`;
                     return `
                         <div class="product-card">
                             <div class="product-img">${imgHtml}${emojiHtml}</div>
                             <div class="product-info">
-                                <div class="product-name">${itemName}</div>
-                                <div class="product-meta">
-                                    <span>💡 ${usersText}也喜欢</span>
-                                    <span class="product-price" style="color:#ff5000;">🔥 猜你喜欢</span>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
+                                 <div class="product-name">${itemName}</div>
+                                 <div class="product-meta">
+                                     <span>${reasonText}</span>
+                                 <span class="product-price" style="color:#ff5000;">🔥 猜你喜欢</span>
+                               </div>
+                           </div>
+                       </div>
+                      `;
+               }).join('');
             } else if (recContainer) {
                 recContainer.innerHTML = '<div class="empty-state">暂无推荐商品</div>';
             }
